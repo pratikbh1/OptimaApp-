@@ -18,9 +18,13 @@ if "activity_log" not in st.session_state:
 if "weight_log" not in st.session_state:
     st.session_state.weight_log = []
 
+if "steps_log" not in st.session_state:
+    st.session_state.steps_log = []
+
 def save_data():
     pd.DataFrame(st.session_state.activity_log).to_csv("data.csv", index=False)
     pd.DataFrame(st.session_state.weight_log).to_csv("weight.csv", index=False)
+    pd.DataFrame(st.session_state.steps_log).to_csv("steps.csv", index=False)
 
 # =============================
 # FOOD DATABASE (per 100g or per unit)
@@ -132,18 +136,19 @@ st.sidebar.metric("BMR (Calories/day)", f"{int(bmr)} kcal")
 # =============================
 # TABS
 # =============================
-tabs = st.tabs(["Dashboard", "Nutrition", "Workout", "History", "Weight Tracker"])
+tabs = st.tabs(["Dashboard", "Nutrition", "Workout", "History", "Weight & Steps", "Weekly Charts"])
 
 # =============================
 # DASHBOARD TAB
 # =============================
 with tabs[0]:
-    st.subheader("Calorie Tracker")
+    st.subheader("Calorie & Macro Tracker")
     df = pd.DataFrame(st.session_state.activity_log)
     total_cal = df["Calories"].sum() if not df.empty else 0
     total_protein = df["Protein"].sum() if not df.empty else 0
     total_carbs = df["Carbs"].sum() if not df.empty else 0
     total_fat = df["Fat"].sum() if not df.empty else 0
+
     goal_cal = st.slider("Daily Calorie Goal", 1000, 4000, 2200)
     goal_protein = st.slider("Daily Protein Goal (g)", 50, 300, 150)
     goal_carbs = st.slider("Daily Carbs Goal (g)", 50, 400, 200)
@@ -165,13 +170,13 @@ with tabs[0]:
 
     # Macro Rings
     fig_macro = go.Figure()
-    fig_macro.add_trace(go.Pie(values=[total_protein, goal_protein-total_protein],
+    fig_macro.add_trace(go.Pie(values=[total_protein, max(goal_protein-total_protein,0)],
                                labels=["Protein", "Remaining"], hole=0.6, name="Protein",
                                marker_colors=["#FF6361", "#E5E5E5"]))
-    fig_macro.add_trace(go.Pie(values=[total_carbs, goal_carbs-total_carbs],
+    fig_macro.add_trace(go.Pie(values=[total_carbs, max(goal_carbs-total_carbs,0)],
                                labels=["Carbs", "Remaining"], hole=0.6, name="Carbs",
                                marker_colors=["#FFA600", "#E5E5E5"]))
-    fig_macro.add_trace(go.Pie(values=[total_fat, goal_fat-total_fat],
+    fig_macro.add_trace(go.Pie(values=[total_fat, max(goal_fat-total_fat,0)],
                                labels=["Fat", "Remaining"], hole=0.6, name="Fat",
                                marker_colors=["#58508D", "#E5E5E5"]))
     fig_macro.update_layout(title_text="Macro Progress", grid={'rows':1,'columns':3})
@@ -181,7 +186,8 @@ with tabs[0]:
 # NUTRITION TAB
 # =============================
 with tabs[1]:
-    st.subheader("Log Food / Macros")
+    st.subheader("Log Food / Meal")
+    meal_type = st.selectbox("Meal Type", ["Breakfast", "Lunch", "Dinner", "Snack"])
     food = st.selectbox("Select Food", list(FOOD_DB.keys()))
     qty = st.number_input("Quantity (grams or unit for eggs/chapati)", value=100, min_value=1)
 
@@ -196,6 +202,7 @@ with tabs[1]:
         st.session_state.activity_log.append({
             "Time": datetime.now().strftime("%H:%M"),
             "Type": "Food",
+            "Meal": meal_type,
             "Details": f"{qty}g {food}",
             "Calories": cal,
             "Protein": protein,
@@ -237,13 +244,10 @@ with tabs[2]:
 # HISTORY TAB
 # =============================
 with tabs[3]:
-    st.subheader("History")
+    st.subheader("Daily History")
     df = pd.DataFrame(st.session_state.activity_log)
     if not df.empty:
-        for idx, row in df.iterrows():
-            st.markdown(f"**{row['Time']} | {row['Type']}**")
-            st.markdown(f"{row['Details']} - {row['Calories']:.1f} kcal")
-            st.markdown("---")
+        st.table(df)
         if st.button("Clear Logs"):
             st.session_state.activity_log = []
             save_data()
@@ -252,19 +256,48 @@ with tabs[3]:
         st.info("No logs yet.")
 
 # =============================
-# WEIGHT TRACKER TAB
+# WEIGHT & STEPS TAB
 # =============================
 with tabs[4]:
-    st.subheader("Weight Tracker")
+    st.subheader("Weight & Steps Tracker")
     new_weight = st.number_input("Enter Weight (kg)", value=weight_now)
-    if st.button("Log Weight"):
+    new_steps = st.number_input("Enter Steps Today", value=0, min_value=0)
+
+    if st.button("Log Weight & Steps"):
         st.session_state.weight_log.append({
             "Time": datetime.now().strftime("%Y-%m-%d"),
             "Weight": new_weight
         })
+        st.session_state.steps_log.append({
+            "Time": datetime.now().strftime("%Y-%m-%d"),
+            "Steps": new_steps
+        })
         save_data()
-        st.success("Weight logged!")
+        st.success("Weight and Steps logged!")
 
     if st.session_state.weight_log:
         df_w = pd.DataFrame(st.session_state.weight_log)
+        df_s = pd.DataFrame(st.session_state.steps_log)
         st.line_chart(df_w.set_index("Time")["Weight"])
+        st.line_chart(df_s.set_index("Time")["Steps"])
+
+# =============================
+# WEEKLY CHARTS TAB
+# =============================
+with tabs[5]:
+    st.subheader("Weekly Progress Charts")
+    df = pd.DataFrame(st.session_state.activity_log)
+    if not df.empty:
+        weekly_cal = df.groupby(df['Time'].apply(lambda x: datetime.strptime(x, "%H:%M").strftime("%A")))['Calories'].sum()
+        weekly_protein = df.groupby(df['Time'].apply(lambda x: datetime.strptime(x, "%H:%M").strftime("%A")))['Protein'].sum()
+        weekly_carbs = df.groupby(df['Time'].apply(lambda x: datetime.strptime(x, "%H:%M").strftime("%A")))['Carbs'].sum()
+        weekly_fat = df.groupby(df['Time'].apply(lambda x: datetime.strptime(x, "%H:%M").strftime("%A")))['Fat'].sum()
+
+        st.line_chart(pd.DataFrame({
+            "Calories": weekly_cal,
+            "Protein": weekly_protein,
+            "Carbs": weekly_carbs,
+            "Fat": weekly_fat
+        }))
+    else:
+        st.info("No data to show weekly charts yet.")
