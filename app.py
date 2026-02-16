@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import plotly.graph_objects as go
-import os
 
 # =============================
 # PAGE SETUP
@@ -24,31 +23,41 @@ def save_data():
     pd.DataFrame(st.session_state.weight_log).to_csv("weight.csv", index=False)
 
 # =============================
-# FOOD DATABASE (per 100g or unit)
+# FOOD DATABASE (per 100g or per unit)
 # =============================
 FOOD_DB = {
+    # Fish & Meat
     "Rohu Fish": [97, 17, 4, 1],
     "Mutton (Goat)": [143, 27, 0, 6],
+    "Chicken Breast": [165, 31, 0, 3.6],
+    "Chicken Leg": [180, 28, 0, 7],
+    "Chicken Thigh": [209, 26, 0, 10],
+    # Dairy
     "Paneer": [265, 18, 3, 21],
+    "Milk (cow)": [67, 3, 4, 4],
+    "Yogurt (plain)": [59, 10, 4, 0],
     "Ghee": [900, 0, 0, 100],
-    "Tofu": [76, 8, 5, 5],
+    # Eggs
     "Boiled Egg (1 egg ~50g)": [70, 6, 0.5, 5],
+    # Legumes / Pulses
+    "Black Chana (boiled)": [164, 9, 27, 3],
+    "White Chana (boiled)": [164, 9, 27, 3],
+    "Bhatmas / Soybeans (dry)": [446, 36, 30, 20],
+    "Masoor Dal (cooked)": [116, 9, 20, 0],
+    "Rajma (cooked)": [127, 9, 22, 1],
+    # Grains / Cereals
+    "Rice (cooked)": [130, 3, 28, 0],
+    "White Rice (uncooked)": [365, 7, 80, 0.6],
+    "Oats (dry)": [389, 17, 66, 7],
+    "Chapati (whole wheat, 1 medium ~40g)": [120, 4, 20, 3],
+    # Vegetables
     "Spinach (cooked)": [23, 3, 3, 0],
     "Broccoli": [55, 4, 7, 1],
     "Carrot": [41, 1, 11, 0],
     "Radish": [33, 1, 8, 0],
     "Cucumber": [16, 1, 4, 0],
-    "Black Chana (boiled)": [164, 9, 27, 3],
-    "White Chana (boiled)": [164, 9, 27, 3],
-    "Bhatmas / Soybeans (dry)": [446, 36, 30, 20],
-    "Rice (cooked)": [130, 3, 28, 0],
-    "Masoor Dal (cooked)": [116, 9, 20, 0],
-    "Rajma (cooked)": [127, 9, 22, 1],
-    "Milk (cow)": [67, 3, 4, 4],
-    "Yogurt (plain)": [59, 10, 4, 0],
-    "Chicken Breast": [165, 31, 0, 3.6],
-    "Chicken Leg": [180, 28, 0, 7],
-    "Chicken Thigh": [209, 26, 0, 10]
+    # Others
+    "Tofu": [76, 8, 5, 5],
 }
 
 # =============================
@@ -131,6 +140,7 @@ height = st.sidebar.number_input("Height (cm)", value=170)
 weight_now = st.sidebar.number_input("Current Weight (kg)", value=70)
 body_fat = st.sidebar.number_input("Body Fat % (optional)", value=20)
 
+# BMR calculation
 if gender == "Male":
     bmr = 10*weight_now + 6.25*height - 5*age + 5
 else:
@@ -175,7 +185,7 @@ with tabs[0]:
 with tabs[1]:
     st.subheader("Log Food / Macros")
     food = st.selectbox("Select Food", list(FOOD_DB.keys()))
-    qty = st.number_input("Quantity (grams or unit for eggs)", value=100, min_value=1)
+    qty = st.number_input("Quantity (grams or unit for eggs/chapati)", value=100, min_value=1)
 
     cal = FOOD_DB[food][0]*(qty/100)
     protein = FOOD_DB[food][1]*(qty/100)
