@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import plotly.graph_objects as go
+import random
 
 # =============================
 # PAGE SETUP
@@ -21,13 +22,11 @@ if "weight_log" not in st.session_state:
 if "steps_log" not in st.session_state:
     st.session_state.steps_log = []
 
-def save_data():
-    pd.DataFrame(st.session_state.activity_log).to_csv("data.csv", index=False)
-    pd.DataFrame(st.session_state.weight_log).to_csv("weight.csv", index=False)
-    pd.DataFrame(st.session_state.steps_log).to_csv("steps.csv", index=False)
+if "sleep_log" not in st.session_state:
+    st.session_state.sleep_log = []
 
 # =============================
-# FOOD DATABASE (per 100g or per unit)
+# DATABASES
 # =============================
 FOOD_DB = {
     "Rohu Fish": [97, 17, 4, 1],
@@ -57,9 +56,6 @@ FOOD_DB = {
     "Tofu": [76, 8, 5, 5],
 }
 
-# =============================
-# EXERCISE DATABASE
-# =============================
 EXERCISE_DB = {
     "Chest": ["Bench Press", "Incline Bench Press", "Decline Bench Press", "Cable Fly", "Pecdeck Fly",
               "Incline Dumbbell Press", "Flat Dumbbell Press", "Decline Dumbbell Press", "Seated Chest Press",
@@ -139,6 +135,18 @@ st.sidebar.metric("BMR (Calories/day)", f"{int(bmr)} kcal")
 tabs = st.tabs(["Dashboard", "Nutrition", "Workout", "History", "Weight & Steps", "Weekly Charts"])
 
 # =============================
+# SIMULATED AUTO STEPS & SLEEP
+# =============================
+today = datetime.now().strftime("%Y-%m-%d")
+sim_steps = random.randint(3000, 12000)
+sim_sleep = round(random.uniform(5, 9), 1)
+
+if not any(log["Time"]==today for log in st.session_state.steps_log):
+    st.session_state.steps_log.append({"Time": today, "Steps": sim_steps})
+if not any(log["Time"]==today for log in st.session_state.sleep_log):
+    st.session_state.sleep_log.append({"Time": today, "SleepHours": sim_sleep})
+
+# =============================
 # DASHBOARD TAB
 # =============================
 with tabs[0]:
@@ -182,122 +190,138 @@ with tabs[0]:
     fig_macro.update_layout(title_text="Macro Progress", grid={'rows':1,'columns':3})
     st.plotly_chart(fig_macro, use_container_width=True)
 
+    st.metric("Steps Today", st.session_state.steps_log[-1]["Steps"])
+    st.metric("Sleep Hours", st.session_state.sleep_log[-1]["SleepHours"])
+
 # =============================
 # NUTRITION TAB
 # =============================
 with tabs[1]:
-    st.subheader("Log Food / Meal")
-    meal_type = st.selectbox("Meal Type", ["Breakfast", "Lunch", "Dinner", "Snack"])
-    food = st.selectbox("Select Food", list(FOOD_DB.keys()))
-    qty = st.number_input("Quantity (grams or unit for eggs/chapati)", value=100, min_value=1)
+    st.subheader("Log Your Meals")
+    food_query = st.text_input("Search Food")
+    foods_filtered = [f for f in FOOD_DB if food_query.lower() in f.lower()] if food_query else list(FOOD_DB.keys())
+    food_choice = st.selectbox("Select Food", foods_filtered)
+    grams = st.number_input("Quantity (grams)", min_value=1, value=100)
 
-    cal = FOOD_DB[food][0]*(qty/100)
-    protein = FOOD_DB[food][1]*(qty/100)
-    carbs = FOOD_DB[food][2]*(qty/100)
-    fat = FOOD_DB[food][3]*(qty/100)
-
-    st.markdown(f"**Calories:** {cal:.1f} kcal | **Protein:** {protein:.1f} g | **Carbs:** {carbs:.1f} g | **Fat:** {fat:.1f} g")
-
-    if st.button("Add Food Log"):
+    if st.button("Log Food"):
+        cal, protein, carbs, fat = FOOD_DB[food_choice]
+        multiplier = grams / 100
         st.session_state.activity_log.append({
             "Time": datetime.now().strftime("%H:%M"),
             "Type": "Food",
-            "Meal": meal_type,
-            "Details": f"{qty}g {food}",
-            "Calories": cal,
-            "Protein": protein,
-            "Carbs": carbs,
-            "Fat": fat
+            "Details": f"{grams}g {food_choice}",
+            "Calories": int(cal*multiplier),
+            "Protein": round(protein*multiplier,1),
+            "Carbs": round(carbs*multiplier,1),
+            "Fat": round(fat*multiplier,1)
         })
-        save_data()
-        st.success("Food logged!")
+        st.success("Food logged successfully!")
 
 # =============================
 # WORKOUT TAB
 # =============================
 with tabs[2]:
-    st.subheader("Log Workout")
-    muscle = st.selectbox("Muscle Group", list(EXERCISE_DB.keys()))
-    ex = st.selectbox("Exercise", EXERCISE_DB[muscle])
-    preset = PRESET_SETS.get(ex, [])
-    st.markdown("**Preset Sets/Reps:** " + ", ".join(preset))
-
-    weight = st.number_input("Weight (kg)", value=15)
-    reps = st.number_input("Reps", value=12)
-    sets = st.number_input("Sets", value=3)
+    st.subheader("Log Your Workout")
+    muscle_group = st.selectbox("Select Muscle Group", list(EXERCISE_DB.keys()))
+    exercise_choice = st.selectbox("Select Exercise", EXERCISE_DB[muscle_group])
+    weight = st.number_input("Weight (kg)", value=20)
+    reps = st.text_input("Sets x Reps (e.g., 15-12,17.5-10,20-7)", value=",".join(PRESET_SETS.get(exercise_choice,[])))
 
     if st.button("Log Workout"):
-        burned = int(weight * reps * sets * 0.1)
+        burned_cal = len(reps.split(",")) * 50  # simple cal estimate
         st.session_state.activity_log.append({
             "Time": datetime.now().strftime("%H:%M"),
             "Type": "Workout",
-            "Details": f"{ex} | {weight}kg × {reps} × {sets}",
-            "Calories": -burned,
+            "Details": f"{exercise_choice} @ {weight}kg Sets/Reps: {reps}",
+            "Calories": -burned_cal,
             "Protein": 0,
             "Carbs": 0,
             "Fat": 0
         })
-        save_data()
-        st.success(f"Workout logged! Burned {burned} kcal")
+        st.success("Workout logged successfully!")
 
 # =============================
 # HISTORY TAB
 # =============================
 with tabs[3]:
-    st.subheader("Daily History")
-    df = pd.DataFrame(st.session_state.activity_log)
-    if not df.empty:
-        st.table(df)
-        if st.button("Clear Logs"):
-            st.session_state.activity_log = []
-            save_data()
-            st.experimental_rerun()
+    st.subheader("Daily Activity Log")
+    if st.session_state.activity_log:
+        df = pd.DataFrame(st.session_state.activity_log)
+        st.dataframe(df)
+        st.metric("Net Calories Today", df["Calories"].sum())
     else:
-        st.info("No logs yet.")
+        st.info("No activity logged today.")
 
 # =============================
 # WEIGHT & STEPS TAB
 # =============================
 with tabs[4]:
-    st.subheader("Weight & Steps Tracker")
-    new_weight = st.number_input("Enter Weight (kg)", value=weight_now)
-    new_steps = st.number_input("Enter Steps Today", value=0, min_value=0)
+    st.subheader("Weight & Steps")
+    w = st.number_input("Log Weight (kg)", value=weight_now)
+    if st.button("Save Weight"):
+        st.session_state.weight_log.append({"Time": today, "Weight": w})
+        st.success("Weight saved!")
 
-    if st.button("Log Weight & Steps"):
-        st.session_state.weight_log.append({
-            "Time": datetime.now().strftime("%Y-%m-%d"),
-            "Weight": new_weight
-        })
-        st.session_state.steps_log.append({
-            "Time": datetime.now().strftime("%Y-%m-%d"),
-            "Steps": new_steps
-        })
-        save_data()
-        st.success("Weight and Steps logged!")
+    s = st.number_input("Log Steps manually", value=st.session_state.steps_log[-1]["Steps"])
+    if st.button("Save Steps"):
+        st.session_state.steps_log.append({"Time": today, "Steps": s})
+        st.success("Steps saved!")
 
-    if st.session_state.weight_log:
-        df_w = pd.DataFrame(st.session_state.weight_log)
-        df_s = pd.DataFrame(st.session_state.steps_log)
-        st.line_chart(df_w.set_index("Time")["Weight"])
-        st.line_chart(df_s.set_index("Time")["Steps"])
+    sl = st.number_input("Log Sleep Hours manually", value=st.session_state.sleep_log[-1]["SleepHours"])
+    if st.button("Save Sleep"):
+        st.session_state.sleep_log.append({"Time": today, "SleepHours": sl})
+        st.success("Sleep saved!")
 
 # =============================
 # WEEKLY CHARTS TAB
 # =============================
 with tabs[5]:
     st.subheader("Weekly Progress Charts")
-    df = pd.DataFrame(st.session_state.activity_log)
-    if not df.empty:
-        weekly_cal = df.groupby(df['Time'].apply(lambda x: datetime.strptime(x, "%H:%M").strftime("%A")))['Calories'].sum()
-        weekly_protein = df.groupby(df['Time'].apply(lambda x: datetime.strptime(x, "%H:%M").strftime("%A")))['Protein'].sum()
-        weekly_carbs = df.groupby(df['Time'].apply(lambda x: datetime.strptime(x, "%H:%M").strftime("%A")))['Carbs'].sum()
-        weekly_fat = df.groupby(df['Time'].apply(lambda x: datetime.strptime(x, "%H:%M").strftime("%A")))['Fat'].sum()
+    # Calories
+    df_cal = pd.DataFrame(st.session_state.activity_log)
+    if not df_cal.empty:
+        df_cal["Date"] = pd.to_datetime(datetime.now().strftime("%Y-%m-%d"))
+        cal_chart = df_cal.groupby("Date")["Calories"].sum().reset_index()
+        st.line_chart(cal_chart.rename(columns={"Calories":"Net Calories"}).set_index("Date"))
 
-        st.line_chart(pd.DataFrame({
-            "Calories": weekly_cal,
-            "Protein": weekly_protein,
-            "Carbs": weekly_carbs,
-            "Fat": weekly_fat
-        }))
-    else:
-        st.info("No data to show weekly charts yet.")
+    # Weight
+    if st.session_state.weight_log:
+        df_w = pd.DataFrame(st.session_state.weight_log)
+        df_w["Time"] = pd.to_datetime(df_w["Time"])
+        st.line_chart(df_w.set_index("Time")["Weight"])
+
+    # Steps
+    if st.session_state.steps_log:
+        df_s = pd.DataFrame(st.session_state.steps_log)
+        df_s["Time"] = pd.to_datetime(df_s["Time"])
+        st.line_chart(df_s.set_index("Time")["Steps"])
+
+    # Sleep
+    if st.session_state.sleep_log:
+        df_sl = pd.DataFrame(st.session_state.sleep_log)
+        df_sl["Time"] = pd.to_datetime(df_sl["Time"])
+        st.line_chart(df_sl.set_index("Time")["SleepHours"])
+
+# =============================
+# EXPORT BUTTON
+# =============================
+st.subheader("Export Data")
+if st.button("Export Activity Log CSV"):
+    df_export = pd.DataFrame(st.session_state.activity_log)
+    df_export.to_csv("activity_log.csv", index=False)
+    st.success("Activity log exported as activity_log.csv")
+
+if st.button("Export Weight Log CSV"):
+    df_export = pd.DataFrame(st.session_state.weight_log)
+    df_export.to_csv("weight_log.csv", index=False)
+    st.success("Weight log exported as weight_log.csv")
+
+if st.button("Export Steps Log CSV"):
+    df_export = pd.DataFrame(st.session_state.steps_log)
+    df_export.to_csv("steps_log.csv", index=False)
+    st.success("Steps log exported as steps_log.csv")
+
+if st.button("Export Sleep Log CSV"):
+    df_export = pd.DataFrame(st.session_state.sleep_log)
+    df_export.to_csv("sleep_log.csv", index=False)
+    st.success("Sleep log exported as sleep_log.csv")
