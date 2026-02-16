@@ -1,9 +1,13 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
+from datetime import datetime
 
-# --- 1. THEME & STYLING ---
+# --- 1. INITIALIZE MEMORY (SESSION STATE) ---
+# This prevents the app from "forgetting" when it refreshes
+if 'activity_log' not in st.session_state:
+    st.session_state.activity_log = []
+
+# --- 2. THEME & STYLING ---
 st.set_page_config(page_title="OPTIMA ELITE", layout="wide", page_icon="⚡")
 st.markdown("""
     <style>
@@ -15,61 +19,55 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. THE DATABASES ---
-FOOD_DB = {
-    "Soya Chunks (Dry)": [345, 52.0, 33.0, 0.5, 13.0], 
-    "Chicken Breast (Cooked)": [165, 31.0, 0.0, 3.6, 0.0],
-    "Paneer": [265, 18.0, 2.6, 21.0, 0.0],
-    "Boiled Egg": [155, 12.6, 1.1, 10.6, 0.0],
-    "White Rice (Cooked)": [130, 2.7, 28.0, 0.3, 0.4]
-}
+# --- 3. DATABASES ---
+FOOD_DB = {"Soya Chunks (Dry)": [345, 52.0], "Chicken Breast": [165, 31.0], "Paneer": [265, 18.0]}
+EXERCISE_DB = {"Chest": ["Bench Press", "Cable Fly"], "Back": ["Lat Pulldown", "Rows"], "Legs": ["Squat", "Leg Press"]}
 
-EXERCISE_DB = {
-    "Chest": ["Bench Press", "Incline DB Press", "Cable Fly"],
-    "Back": ["Lat Pulldown", "Seated Row", "Deadlift"],
-    "Legs": ["Squat", "Leg Press", "Hamstring Curl"],
-    "Shoulders": ["Military Press", "Lateral Raise", "Face Pulls"],
-    "Arms": ["Bicep Curl", "Tricep Pushdown"]
-}
-
-# --- 3. DASHBOARD LOGIC ---
+# --- 4. DASHBOARD ---
 st.title("⚡ Optima Elite Dashboard")
-m1, m2, m3 = st.columns(3)
-with m1: st.markdown('<div class="card">🍎 Consumed<div class="metric-value">1240 kcal</div></div>', unsafe_allow_html=True)
-with m2: st.markdown('<div class="card">🚶 Steps<div class="metric-value">8500</div></div>', unsafe_allow_html=True)
-with m3: st.markdown('<div class="card">🔥 Streak<div class="metric-value">12 Days</div></div>', unsafe_allow_html=True)
+tabs = st.tabs(["🏠 DASHBOARD", "🍎 NUTRITION", "🏋️ WORKOUT", "📜 HISTORY"])
 
-# --- 4. THE INTERACTIVE TABS ---
-tabs = st.tabs(["🍎 NUTRITION LOG", "🏋️ WORKOUT LAB", "🧬 SPLITS"])
-
-with tabs[0]: # NUTRITION LOG
+with tabs[1]: # NUTRITION
     st.markdown('<div class="card">', unsafe_allow_html=True)
     f_item = st.selectbox("Search Food", list(FOOD_DB.keys()))
     f_grams = st.number_input("Grams", min_value=1, value=100)
-    
-    # Calculation Preview
-    r = f_grams / 100
-    cals = int(FOOD_DB[f_item][0] * r)
-    prot = round(FOOD_DB[f_item][1] * r, 1)
-    st.info(f"📊 Preview: {cals} kcal | {prot}g Protein")
-    
-    if st.button("LOG FOOD ITEM"):
-        st.success(f"Successfully logged {f_grams}g of {f_item}!")
-        st.balloons() # Visual reaction
+    if st.button("LOG FOOD"):
+        # Calculate macros
+        cals = int(FOOD_DB[f_item][0] * (f_grams/100))
+        # Save to memory
+        st.session_state.activity_log.append({
+            "Time": datetime.now().strftime("%H:%M"),
+            "Type": "Food",
+            "Details": f"{f_grams}g {f_item}",
+            "Calories": cals
+        })
+        st.success("Food Logged!")
     st.markdown('</div>', unsafe_allow_html=True)
 
-with tabs[1]: # WORKOUT LAB
+with tabs[2]: # WORKOUT
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    w_muscle = st.selectbox("Select Muscle Group", list(EXERCISE_DB.keys()))
-    w_ex = st.selectbox("Select Exercise", EXERCISE_DB[w_muscle])
-    w_weight = st.number_input("Weight (kg)", value=40.0)
-    w_reps = st.number_input("Reps", value=10)
-    
-    if st.button("LOG WORKOUT SET"):
-        # This is the "Reaction" code that was missing!
-        st.toast(f"Logged {w_ex}: {w_weight}kg x {w_reps}", icon="🏋️")
-        st.success(f"Set saved for {w_ex}!")
+    w_muscle = st.selectbox("Muscle", list(EXERCISE_DB.keys()))
+    w_ex = st.selectbox("Exercise", EXERCISE_DB[w_muscle])
+    w_wgt = st.number_input("Weight (kg)", value=60)
+    if st.button("LOG SET"):
+        # Estimate calories (Simple MET estimate)
+        burned = 50 
+        st.session_state.activity_log.append({
+            "Time": datetime.now().strftime("%H:%M"),
+            "Type": "Workout",
+            "Details": f"{w_ex} @ {w_wgt}kg",
+            "Calories": -burned
+        })
+        st.toast("Set Logged!")
     st.markdown('</div>', unsafe_allow_html=True)
 
-with tabs[2]: # SPLITS
-    st.markdown('<div class="card">🧬 Training Architecture Active</div>', unsafe_allow_html=True)
+with tabs[3]: # THE NEW HISTORY TAB
+    st.subheader("Your Daily Log")
+    if st.session_state.activity_log:
+        df = pd.DataFrame(st.session_state.activity_log)
+        st.table(df) # Shows everything logged so far
+        
+        total_net = df['Calories'].sum()
+        st.metric("Net Calorie Impact", f"{total_net} kcal")
+    else:
+        st.info("No logs for today yet. Start logging to see your history!")
