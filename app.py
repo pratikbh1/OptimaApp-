@@ -1,17 +1,18 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 import os
+import plotly.graph_objects as go
 
-# =====================================================
+# =============================
 # PAGE SETUP
-# =====================================================
-st.set_page_config(page_title="Optima Elite", layout="wide")
+# =============================
+st.set_page_config(page_title="Optima Elite", layout="centered")
 st.title("⚡ Optima Elite Fitness Tracker")
 
-# =====================================================
+# =============================
 # LOAD OR CREATE DATA
-# =====================================================
+# =============================
 if "activity_log" not in st.session_state:
     if os.path.exists("data.csv"):
         st.session_state.activity_log = pd.read_csv("data.csv").to_dict("records")
@@ -28,108 +29,190 @@ def save_data():
     pd.DataFrame(st.session_state.activity_log).to_csv("data.csv", index=False)
     pd.DataFrame(st.session_state.weight_log).to_csv("weight.csv", index=False)
 
-# =====================================================
-# DATABASES
-# =====================================================
+# =============================
+# FOOD DATABASE (Nepali foods with macros)
+# =============================
 FOOD_DB = {
-    "Chicken Breast": [165, 31, 0, 3.6],
-    "Paneer": [265, 18, 3, 21],
-    "Soya Chunks": [345, 52, 33, 0.5],
-    "Egg": [155, 13, 1, 11],
-    "Rice (Cooked)": [130, 2.5, 28, 0.3]
+    "Rohu Fish (100g)": [97, 17, 4, 1],
+    "Mutton (Goat) (100g)": [143, 27, 0, 6],
+    "Paneer (100g)": [265, 18, 3, 21],
+    "Ghee (1 tbsp ~14g)": [900, 0, 0, 100],
+    "Tofu (100g)": [76, 8, 5, 5],
+    "Boiled Egg (1 large)": [70, 6, 0.5, 5],
+    "Spinach (100g cooked)": [23, 3, 3, 0],
+    "Broccoli (100g)": [55, 4, 7, 1],
+    "Carrot (100g)": [41, 1, 11, 0],
+    "Radish (100g)": [33, 1, 8, 0],
+    "Cucumber (100g)": [16, 1, 4, 0],
+    "Black Chana (boiled 100g)": [164, 9, 27, 3],
+    "White Chana (boiled 100g)": [164, 9, 27, 3],
+    "Bhatmas / Soybeans (100g dry)": [446, 36, 30, 20],
+    "Rice (cooked 100g)": [130, 3, 28, 0],
+    "Masoor Dal (100g cooked)": [116, 9, 20, 0],
+    "Rajma (100g cooked)": [127, 9, 22, 1],
+    "Milk (cow) (100g)": [67, 3, 4, 4],
+    "Yogurt (plain 100g)": [59, 10, 4, 0]
 }
 
+# =============================
+# EXERCISE DATABASE (Categorized)
+# =============================
 EXERCISE_DB = {
-    "Chest": ["Bench Press", "Pushups", "Cable Fly"],
-    "Back": ["Rows", "Pulldown"],
-    "Legs": ["Squat", "Leg Press"],
-    "Arms": ["Bicep Curl", "Tricep Pushdown"]
+    "Chest": [
+        "Bench Press", "Incline Bench Press", "Decline Bench Press",
+        "Cable Fly", "Pecdeck Fly", "Incline Dumbbell Press",
+        "Flat Dumbbell Press", "Decline Dumbbell Press", "Seated Chest Press",
+        "Incline Smith Press"
+    ],
+    "Back": [
+        "T Bar Row", "Seated Rowing", "Lat Pull-Down",
+        "Single Hand Row", "Plate Loaded Lat Pull Down",
+        "Kneeling Cable Pull-Down"
+    ],
+    "Arms": [
+        "Cable Push Down", "Straight Bar Push Down", "DB Bicep Curl",
+        "Straight Arm Extension", "Cable Curl", "Hammer Curl",
+        "Preacher Curl", "Overhead Tricep Extension", "Face Pull"
+    ],
+    "Legs": [
+        "Smith Machine Squat", "Hamstring Curl", "Stiff Leg",
+        "Leg Extension", "Leg Press", "Standing Calf Raise",
+        "Abductor Machine"
+    ],
+    "Shoulders": [
+        "Dumbbell Shoulder Press", "Shoulder Press Machine",
+        "Reverse Flies"
+    ]
 }
 
-# =====================================================
-# SIDEBAR
-# =====================================================
-st.sidebar.subheader("User Info for BMR")
+# Preset sets for each exercise
+PRESET_SETS = {
+    "Bench Press": ["15-12", "17.5-10", "20-7"],
+    "Incline Bench Press": ["15-12", "17.5-8", "20-6"],
+    "Decline Bench Press": ["15-12", "17.5-10", "20-7"],
+    "Cable Fly": ["3-15", "4-10", "5-7"],
+    "Pecdeck Fly": ["8-15", "9-10", "10-9"],
+    "Cable Push Down": ["6-15", "7-10", "8-8"],
+    "Straight Bar Push Down": ["6-12", "7-12", "8-10"],
+    "Incline Dumbbell Press": ["15-12", "17.5-10", "20-10"],
+    "Flat Dumbbell Press": ["15-12", "20-6", "20-7"],
+    "Decline Dumbbell Press": ["15-12", "15-10", "15-9"],
+    "Seated Chest Press": ["22.5-12", "25-10", "27.5-9"],
+    "Incline Smith Press": ["15-12", "17.5-10", "20-8"],
+    "T Bar Row": ["35-12", "40-10", "45-8"],
+    "Seated Rowing": ["8-15", "9-12", "10-10"],
+    "Lat Pull-Down": ["7-15", "8-12", "9-11"],
+    "Single Hand Row": ["17.5-12", "20-11", "25-8"],
+    "Plate Loaded Lat Pull Down": ["40-12", "50-10", "55-8"],
+    "Kneeling Cable Pull-Down": ["6-12", "7-7"],
+    "DB Bicep Curl": ["10-12", "10-12", "12.5-8"],
+    "Straight Arm Extension": ["5-15", "6-10", "7-8"],
+    "Cable Curl": ["5-12", "6-10", "7-9"],
+    "Hammer Curl": ["10-12", "12.5-10", "15-10"],
+    "Preacher Curl": ["20-12", "22.5-10", "25-9"],
+    "Overhead Tricep Extension": ["3-15", "4-15", "5-13"],
+    "Face Pull": ["5-12", "6-11", "7-10"],
+    "Smith Machine Squat": ["25-12", "30-8", "35-6"],
+    "Hamstring Curl": ["10-15", "12-12"],
+    "Stiff Leg": ["10-12", "15-10", "20-7"],
+    "Leg Extension": ["6-15", "7-12"],
+    "Leg Press": ["115-15", "120-11", "130-8"],
+    "Standing Calf Raise": ["60-15", "70-15"],
+    "Abductor Machine": ["48-12", "54-10", "60-10"],
+    "Dumbbell Shoulder Press": ["12.5-12", "15-10", "20-7"],
+    "Shoulder Press Machine": ["25-12", "27.5-10", "30-9"],
+    "Reverse Flies": ["6-15", "7-12", "8-8"]
+}
+
+# =============================
+# USER INFO SIDEBAR
+# =============================
+st.sidebar.subheader("User Info (for BMR)")
 age = st.sidebar.number_input("Age", value=25)
 gender = st.sidebar.selectbox("Gender", ["Male", "Female"])
 height = st.sidebar.number_input("Height (cm)", value=170)
 weight_now = st.sidebar.number_input("Current Weight (kg)", value=70)
 body_fat = st.sidebar.number_input("Body Fat % (optional)", value=20)
 
-# Calculate BMR (Mifflin-St Jeor)
+# BMR calculation
 if gender == "Male":
     bmr = 10*weight_now + 6.25*height - 5*age + 5
 else:
     bmr = 10*weight_now + 6.25*height - 5*age - 161
-
 st.sidebar.metric("BMR (Calories/day)", f"{int(bmr)} kcal")
 
-# =====================================================
+# =============================
 # TABS
-# =====================================================
-tabs = st.tabs(["Dashboard", "Nutrition", "Workout", "Steps", "Weight & Body Fat", "Weekly Charts", "History"])
+# =============================
+tabs = st.tabs(["Dashboard", "Nutrition", "Workout", "History"])
 
-# =====================================================
-# DASHBOARD
-# =====================================================
+# =============================
+# DASHBOARD TAB
+# =============================
 with tabs[0]:
-    st.subheader("Today's Summary")
+    st.subheader("Calorie Tracker")
+    df = pd.DataFrame(st.session_state.activity_log)
+    total_cal = df["Calories"].sum() if not df.empty else 0
+    goal_cal = st.slider("Daily Calorie Goal", 1000, 4000, 2200)
 
-    if st.session_state.activity_log:
-        df = pd.DataFrame(st.session_state.activity_log)
-        total_cal = df["Calories"].sum()
-        total_pro = df.get("Protein", 0).sum()
-        total_carbs = df.get("Carbs", 0).sum()
-        total_fat = df.get("Fat", 0).sum()
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=total_cal,
+        domain={'x': [0, 1], 'y': [0, 1]},
+        title={'text': "Calories"},
+        gauge={
+            'axis': {'range': [0, goal_cal]},
+            'bar': {'color': "#FF4B4B"},
+            'bgcolor': "lightgray",
+            'steps': [
+                {'range': [0, goal_cal*0.5], 'color': "lightgreen"},
+                {'range': [goal_cal*0.5, goal_cal*0.75], 'color': "yellow"},
+                {'range': [goal_cal*0.75, goal_cal], 'color': "red"}
+            ],
+        }
+    ))
+    st.plotly_chart(fig, use_container_width=True)
 
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Calories", f"{total_cal} kcal")
-        c2.metric("Protein", f"{total_pro} g")
-        c3.metric("Carbs", f"{total_carbs} g")
-        c4.metric("Fat", f"{total_fat} g")
-
-        st.progress(min(total_cal / bmr, 1.0))
-
-    else:
-        st.info("Start logging food, workouts, and steps.")
-
-# =====================================================
-# NUTRITION
-# =====================================================
+# =============================
+# NUTRITION TAB
+# =============================
 with tabs[1]:
-    st.subheader("Log Food")
-    food = st.selectbox("Food", list(FOOD_DB.keys()))
-    grams = st.number_input("Grams", value=100)
+    st.subheader("Log Food / Macros")
+    food = st.selectbox("Select Food", list(FOOD_DB.keys()))
+    qty = st.number_input("Quantity (unit / 100g)", value=1)
 
-    if st.button("Add Food"):
-        factor = grams / 100
-        cals = FOOD_DB[food][0] * factor
-        protein = FOOD_DB[food][1] * factor
-        carbs = FOOD_DB[food][2] * factor
-        fat = FOOD_DB[food][3] * factor
+    cal = FOOD_DB[food][0]*qty
+    protein = FOOD_DB[food][1]*qty
+    carbs = FOOD_DB[food][2]*qty
+    fat = FOOD_DB[food][3]*qty
 
+    st.markdown(f"**Calories:** {cal} kcal | **Protein:** {protein}g | **Carbs:** {carbs}g | **Fat:** {fat}g")
+
+    if st.button("Add Food Log"):
         st.session_state.activity_log.append({
             "Time": datetime.now().strftime("%H:%M"),
             "Type": "Food",
-            "Details": f"{grams}g {food}",
-            "Calories": round(cals),
-            "Protein": round(protein,1),
-            "Carbs": round(carbs,1),
-            "Fat": round(fat,1)
+            "Details": f"{qty} x {food}",
+            "Calories": cal,
+            "Protein": protein,
+            "Carbs": carbs,
+            "Fat": fat
         })
-
         save_data()
         st.success("Food logged!")
 
-# =====================================================
-# WORKOUT
-# =====================================================
+# =============================
+# WORKOUT TAB
+# =============================
 with tabs[2]:
     st.subheader("Log Workout")
     muscle = st.selectbox("Muscle Group", list(EXERCISE_DB.keys()))
-    exercise = st.selectbox("Exercise", EXERCISE_DB[muscle])
-    weight = st.number_input("Weight (kg)", value=40)
-    reps = st.number_input("Reps", value=10)
+    ex = st.selectbox("Exercise", EXERCISE_DB[muscle])
+    preset = PRESET_SETS.get(ex, [])
+    st.markdown("**Preset Sets/Reps:** " + ", ".join(preset))
+
+    weight = st.number_input("Weight (kg)", value=15)
+    reps = st.number_input("Reps", value=12)
     sets = st.number_input("Sets", value=3)
 
     if st.button("Log Workout"):
@@ -137,7 +220,7 @@ with tabs[2]:
         st.session_state.activity_log.append({
             "Time": datetime.now().strftime("%H:%M"),
             "Type": "Workout",
-            "Details": f"{exercise} | {weight}kg × {reps} × {sets}",
+            "Details": f"{ex} | {weight}kg × {reps} × {sets}",
             "Calories": -burned,
             "Protein": 0,
             "Carbs": 0,
@@ -146,69 +229,16 @@ with tabs[2]:
         save_data()
         st.success(f"Workout logged! Burned {burned} kcal")
 
-# =====================================================
-# STEPS
-# =====================================================
+# =============================
+# HISTORY TAB
+# =============================
 with tabs[3]:
-    st.subheader("Daily Steps")
-    steps = st.number_input("Steps Walked", value=0)
-    if st.button("Log Steps"):
-        burned = int(steps * 0.04)
-        st.session_state.activity_log.append({
-            "Time": datetime.now().strftime("%H:%M"),
-            "Type": "Steps",
-            "Details": f"{steps} steps",
-            "Calories": -burned,
-            "Protein": 0,
-            "Carbs": 0,
-            "Fat": 0
-        })
-        save_data()
-        st.success(f"Steps logged! Burned {burned} kcal")
-
-# =====================================================
-# WEIGHT & BODY FAT
-# =====================================================
-with tabs[4]:
-    st.subheader("Log Weight & Body Fat")
-    w = st.number_input("Weight (kg)", value=weight_now)
-    bf = st.number_input("Body Fat %", value=body_fat)
-
-    if st.button("Log Weight"):
-        st.session_state.weight_log.append({
-            "Date": datetime.now().strftime("%Y-%m-%d"),
-            "Weight": w,
-            "Body Fat %": bf
-        })
-        save_data()
-        st.success("Weight & body fat logged!")
-
-    if st.session_state.weight_log:
-        st.line_chart(pd.DataFrame(st.session_state.weight_log)[["Weight","Body Fat %"]])
-
-# =====================================================
-# WEEKLY CHARTS
-# =====================================================
-with tabs[5]:
-    st.subheader("Weekly Summary")
-    if st.session_state.activity_log:
-        df = pd.DataFrame(st.session_state.activity_log)
-        df["Date"] = pd.to_datetime(datetime.now().strftime("%Y-%m-%d"))
-        st.bar_chart(df.groupby("Type")["Calories"].sum())
-    else:
-        st.info("No logs to display")
-
-# =====================================================
-# HISTORY
-# =====================================================
-with tabs[6]:
     st.subheader("History")
-    if st.session_state.activity_log:
-        st.dataframe(pd.DataFrame(st.session_state.activity_log))
-        if st.button("Clear All Data"):
+    if not df.empty:
+        st.dataframe(df)
+        if st.button("Clear Logs"):
             st.session_state.activity_log = []
-            st.session_state.weight_log = []
             save_data()
             st.experimental_rerun()
     else:
-        st.info("No history yet.")
+        st.info("No logs yet.")
