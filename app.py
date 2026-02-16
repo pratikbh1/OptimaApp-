@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-# --- THEME & STYLING ---
+# --- 1. PREMIUM UI/UX STYLE ---
 st.set_page_config(page_title="OPTIMA ELITE", layout="wide", page_icon="⚡")
 st.markdown("""
     <style>
@@ -15,9 +15,9 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 100g PRECISION DATABASE ---
+# --- 2. THE MASTER DATABASES (FOOD & EXERCISES) ---
 FOOD_DB = {
-    "Soya Chunks (Dry)": [345, 52.0, 33.0, 0.5, 13.0], # Precise Protein
+    "Soya Chunks (Dry)": [345, 52.0, 33.0, 0.5, 13.0], 
     "Chicken Breast (Cooked)": [165, 31.0, 0.0, 3.6, 0.0],
     "Paneer": [265, 18.0, 2.6, 21.0, 0.0],
     "Boiled Egg": [155, 12.6, 1.1, 10.6, 0.0],
@@ -27,18 +27,29 @@ FOOD_DB = {
     "Oats (Uncooked)": [389, 16.9, 66.0, 6.9, 10.0]
 }
 
-# --- CALCULATIONS ---
+EXERCISE_DB = {
+    "Chest": ["Bench Press", "Incline DB Press", "Cable Fly", "Dips"],
+    "Back": ["Lat Pulldown", "Seated Row", "Deadlift", "Pullups"],
+    "Legs": ["Squat", "Leg Press", "Hamstring Curl", "Calf Raise"],
+    "Shoulders": ["Military Press", "Lateral Raise", "Face Pulls"],
+    "Arms": ["Bicep Curl", "Hammer Curl", "Tricep Pushdown", "Skull Crushers"]
+}
+
+GYM_SPLITS = {
+    "PPL (Push/Pull/Legs)": {"Push": "Chest/Shoulders/Triceps", "Pull": "Back/Biceps", "Legs": "Quads/Hams"},
+    "Bro Split": {"Mon": "Chest", "Tue": "Back", "Wed": "Shoulders", "Thu": "Legs", "Fri": "Arms"},
+    "Upper/Lower": {"Day 1": "Upper Body", "Day 2": "Lower Body", "Day 3": "Rest"}
+}
+
+# --- 3. LOGIC & DASHBOARD ---
 USER_WEIGHT = 75 
 CAL_GOAL = 2400
-current_consumed = 1240 # Placeholder for total logged
+current_consumed = 1240 
 
 def get_burned_cals(steps):
-    # Burn rate adjusted for weight
     return int(steps * (USER_WEIGHT / 70) * 0.045)
 
-# --- HEADER: THE NET CALORIE RING ---
 st.title("⚡ Optima Elite Dashboard")
-
 c1, c2, c3 = st.columns([1, 2, 1])
 
 with c3:
@@ -53,48 +64,53 @@ with c1:
     st.markdown(f'<div class="card">🔥 <strong>Streak</strong><div class="metric-value">12 Days</div></div>', unsafe_allow_html=True)
 
 with c2:
-    # Net Calorie Visual Ring
     net_cals = current_consumed - burned
-    remaining = CAL_GOAL - net_cals
-    
     fig = go.Figure(go.Indicator(
-        mode = "gauge+number",
-        value = net_cals,
+        mode = "gauge+number", value = net_cals,
         title = {'text': "Net Calories (Consumed - Burned)"},
-        gauge = {
-            'axis': {'range': [0, CAL_GOAL]},
-            'bar': {'color': "black"},
-            'steps': [
-                {'range': [0, 1800], 'color': "#E8F5E9"},
-                {'range': [1800, 2400], 'color': "#FFF9C4"}],
-            'threshold': {'line': {'color': "red", 'width': 4}, 'thickness': 0.75, 'value': CAL_GOAL}
-        }
+        gauge = {'axis': {'range': [0, CAL_GOAL]}, 'bar': {'color': "black"}}
     ))
     fig.update_layout(height=350, margin=dict(t=50, b=0, l=0, r=0))
     st.plotly_chart(fig, use_container_width=True)
 
-# --- FUNCTIONAL TABS ---
-tabs = st.tabs(["🍎 NUTRITION LOG", "🏋️ WORKOUT LAB", "📊 TRENDS"])
+# --- 4. TABS ---
+tabs = st.tabs(["🍎 NUTRITION LOG", "🏋️ WORKOUT LAB", "🧬 TRAINING SPLITS"])
 
-with tabs[0]:
+with tabs[0]: # NUTRITION
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    f1, f2 = st.columns(2)
-    with f1:
+    f_col1, f_col2 = st.columns(2)
+    with f_col1:
         food = st.selectbox("Search Food", list(FOOD_DB.keys()))
         grams = st.number_input("Weight (Grams)", min_value=1, value=100)
         r = grams / 100
         val = FOOD_DB[food]
         c, p, crb, fib = int(val[0]*r), round(val[1]*r,1), round(val[2]*r,1), round(val[4]*r,1)
-        st.info(f"📊 {grams}g of {food}: **{c} kcal | {p}g Protein | {crb}g Carbs**")
-        if st.button("LOG TO CLOUD"): st.success("Data Synced Successfully!")
-    with f2:
-        st.subheader("Daily Macros")
-        st.progress(0.6)
-        st.caption("Protein: 95g / 160g")
-        st.progress(0.4)
-        st.caption("Carbs: 120g / 300g")
+        st.info(f"📊 {grams}g: {c} kcal | P: {p}g | C: {crb}g | Fiber: {fib}g")
+        st.button("LOG MEAL")
     st.markdown('</div>', unsafe_allow_html=True)
 
-with tabs[1]:
-    st.markdown('<div class="card"><h3>Gym Split: PPL Active</h3><p>Today is <strong>Push Day</strong></p></div>', unsafe_allow_html=True)
-    st.button("Open Training Architecture")
+with tabs[1]: # WORKOUT LAB
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    w_col1, w_col2 = st.columns(2)
+    with w_col1:
+        st.subheader("Log Your Set")
+        muscle = st.selectbox("Select Muscle Group", list(EXERCISE_DB.keys()))
+        ex = st.selectbox("Select Exercise", EXERCISE_DB[muscle])
+        st.number_input("Weight (kg)", value=60.0)
+        st.number_input("Reps", value=10)
+        st.button("Log Workout Set")
+    with w_col2:
+        st.subheader("Volume Progress")
+        st.line_chart([1000, 1200, 1100, 1500, 1400])
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with tabs[2]: # SPLITS
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    choice = st.selectbox("Select Your Active Split", list(GYM_SPLITS.keys()))
+    details = GYM_SPLITS[choice]
+    scols = st.columns(len(details))
+    for i, (day, routine) in enumerate(details.items()):
+        with scols[i]:
+            st.markdown(f"**{day}**")
+            st.caption(routine)
+    st.markdown('</div>', unsafe_allow_html=True)
