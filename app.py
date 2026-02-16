@@ -26,37 +26,30 @@ def save_data():
 # FOOD DATABASE (per 100g or per unit)
 # =============================
 FOOD_DB = {
-    # Fish & Meat
     "Rohu Fish": [97, 17, 4, 1],
     "Mutton (Goat)": [143, 27, 0, 6],
     "Chicken Breast": [165, 31, 0, 3.6],
     "Chicken Leg": [180, 28, 0, 7],
     "Chicken Thigh": [209, 26, 0, 10],
-    # Dairy
     "Paneer": [265, 18, 3, 21],
     "Milk (cow)": [67, 3, 4, 4],
     "Yogurt (plain)": [59, 10, 4, 0],
     "Ghee": [900, 0, 0, 100],
-    # Eggs
     "Boiled Egg (1 egg ~50g)": [70, 6, 0.5, 5],
-    # Legumes / Pulses
     "Black Chana (boiled)": [164, 9, 27, 3],
     "White Chana (boiled)": [164, 9, 27, 3],
     "Bhatmas / Soybeans (dry)": [446, 36, 30, 20],
     "Masoor Dal (cooked)": [116, 9, 20, 0],
     "Rajma (cooked)": [127, 9, 22, 1],
-    # Grains / Cereals
     "Rice (cooked)": [130, 3, 28, 0],
     "White Rice (uncooked)": [365, 7, 80, 0.6],
     "Oats (dry)": [389, 17, 66, 7],
     "Chapati (whole wheat, 1 medium ~40g)": [120, 4, 20, 3],
-    # Vegetables
     "Spinach (cooked)": [23, 3, 3, 0],
     "Broccoli": [55, 4, 7, 1],
     "Carrot": [41, 1, 11, 0],
     "Radish": [33, 1, 8, 0],
     "Cucumber": [16, 1, 4, 0],
-    # Others
     "Tofu": [76, 8, 5, 5],
 }
 
@@ -64,53 +57,40 @@ FOOD_DB = {
 # EXERCISE DATABASE
 # =============================
 EXERCISE_DB = {
-    "Chest": [
-        "Bench Press", "Incline Bench Press", "Decline Bench Press",
-        "Cable Fly", "Pecdeck Fly", "Incline Dumbbell Press",
-        "Flat Dumbbell Press", "Decline Dumbbell Press", "Seated Chest Press",
-        "Incline Smith Press"
-    ],
-    "Back": [
-        "T Bar Row", "Seated Rowing", "Lat Pull-Down",
-        "Single Hand Row", "Plate Loaded Lat Pull Down",
-        "Kneeling Cable Pull-Down"
-    ],
-    "Arms": [
-        "Cable Push Down", "Straight Bar Push Down", "DB Bicep Curl",
-        "Straight Arm Extension", "Cable Curl", "Hammer Curl",
-        "Preacher Curl", "Overhead Tricep Extension", "Face Pull"
-    ],
-    "Legs": [
-        "Smith Machine Squat", "Hamstring Curl", "Stiff Leg",
-        "Leg Extension", "Leg Press", "Standing Calf Raise",
-        "Abductor Machine"
-    ],
-    "Shoulders": [
-        "Dumbbell Shoulder Press", "Shoulder Press Machine",
-        "Reverse Flies"
-    ]
+    "Chest": ["Bench Press", "Incline Bench Press", "Decline Bench Press", "Cable Fly", "Pecdeck Fly",
+              "Incline Dumbbell Press", "Flat Dumbbell Press", "Decline Dumbbell Press", "Seated Chest Press",
+              "Incline Smith Press"],
+    "Back": ["T Bar Row", "Seated Rowing", "Lat Pull-Down", "Single Hand Row", "Plate Loaded Lat Pull Down",
+             "Kneeling Cable Pull-Down"],
+    "Arms": ["Cable Push Down", "Straight Bar Push Down", "DB Bicep Curl", "Straight Arm Extension", "Cable Curl",
+             "Hammer Curl", "Preacher Curl", "Overhead Tricep Extension", "Face Pull"],
+    "Legs": ["Smith Machine Squat", "Hamstring Curl", "Stiff Leg", "Leg Extension", "Leg Press",
+             "Standing Calf Raise", "Abductor Machine"],
+    "Shoulders": ["Dumbbell Shoulder Press", "Shoulder Press Machine", "Reverse Flies"]
 }
 
-# Preset sets for each exercise
 PRESET_SETS = {
+    # Chest
     "Bench Press": ["15-12", "17.5-10", "20-7"],
     "Incline Bench Press": ["15-12", "17.5-8", "20-6"],
     "Decline Bench Press": ["15-12", "17.5-10", "20-7"],
     "Cable Fly": ["3-15", "4-10", "5-7"],
     "Pecdeck Fly": ["8-15", "9-10", "10-9"],
-    "Cable Push Down": ["6-15", "7-10", "8-8"],
-    "Straight Bar Push Down": ["6-12", "7-12", "8-10"],
     "Incline Dumbbell Press": ["15-12", "17.5-10", "20-10"],
     "Flat Dumbbell Press": ["15-12", "20-6", "20-7"],
     "Decline Dumbbell Press": ["15-12", "15-10", "15-9"],
     "Seated Chest Press": ["22.5-12", "25-10", "27.5-9"],
     "Incline Smith Press": ["15-12", "17.5-10", "20-8"],
+    # Back
     "T Bar Row": ["35-12", "40-10", "45-8"],
     "Seated Rowing": ["8-15", "9-12", "10-10"],
     "Lat Pull-Down": ["7-15", "8-12", "9-11"],
     "Single Hand Row": ["17.5-12", "20-11", "25-8"],
     "Plate Loaded Lat Pull Down": ["40-12", "50-10", "55-8"],
     "Kneeling Cable Pull-Down": ["6-12", "7-7"],
+    # Arms
+    "Cable Push Down": ["6-15", "7-10", "8-8"],
+    "Straight Bar Push Down": ["6-12", "7-12", "8-10"],
     "DB Bicep Curl": ["10-12", "10-12", "12.5-8"],
     "Straight Arm Extension": ["5-15", "6-10", "7-8"],
     "Cable Curl": ["5-12", "6-10", "7-9"],
@@ -118,6 +98,7 @@ PRESET_SETS = {
     "Preacher Curl": ["20-12", "22.5-10", "25-9"],
     "Overhead Tricep Extension": ["3-15", "4-15", "5-13"],
     "Face Pull": ["5-12", "6-11", "7-10"],
+    # Legs
     "Smith Machine Squat": ["25-12", "30-8", "35-6"],
     "Hamstring Curl": ["10-15", "12-12"],
     "Stiff Leg": ["10-12", "15-10", "20-7"],
@@ -125,6 +106,7 @@ PRESET_SETS = {
     "Leg Press": ["115-15", "120-11", "130-8"],
     "Standing Calf Raise": ["60-15", "70-15"],
     "Abductor Machine": ["48-12", "54-10", "60-10"],
+    # Shoulders
     "Dumbbell Shoulder Press": ["12.5-12", "15-10", "20-7"],
     "Shoulder Press Machine": ["25-12", "27.5-10", "30-9"],
     "Reverse Flies": ["6-15", "7-12", "8-8"]
@@ -133,7 +115,7 @@ PRESET_SETS = {
 # =============================
 # USER INFO SIDEBAR
 # =============================
-st.sidebar.subheader("User Info (for BMR)")
+st.sidebar.subheader("User Info (for BMR & Weight)")
 age = st.sidebar.number_input("Age", value=25)
 gender = st.sidebar.selectbox("Gender", ["Male", "Female"])
 height = st.sidebar.number_input("Height (cm)", value=170)
@@ -150,7 +132,7 @@ st.sidebar.metric("BMR (Calories/day)", f"{int(bmr)} kcal")
 # =============================
 # TABS
 # =============================
-tabs = st.tabs(["Dashboard", "Nutrition", "Workout", "History"])
+tabs = st.tabs(["Dashboard", "Nutrition", "Workout", "History", "Weight Tracker"])
 
 # =============================
 # DASHBOARD TAB
@@ -159,25 +141,41 @@ with tabs[0]:
     st.subheader("Calorie Tracker")
     df = pd.DataFrame(st.session_state.activity_log)
     total_cal = df["Calories"].sum() if not df.empty else 0
+    total_protein = df["Protein"].sum() if not df.empty else 0
+    total_carbs = df["Carbs"].sum() if not df.empty else 0
+    total_fat = df["Fat"].sum() if not df.empty else 0
     goal_cal = st.slider("Daily Calorie Goal", 1000, 4000, 2200)
+    goal_protein = st.slider("Daily Protein Goal (g)", 50, 300, 150)
+    goal_carbs = st.slider("Daily Carbs Goal (g)", 50, 400, 200)
+    goal_fat = st.slider("Daily Fat Goal (g)", 20, 150, 50)
 
-    fig = go.Figure(go.Indicator(
+    # Calorie gauge
+    fig_cal = go.Figure(go.Indicator(
         mode="gauge+number",
         value=total_cal,
         domain={'x': [0, 1], 'y': [0, 1]},
         title={'text': "Calories"},
-        gauge={
-            'axis': {'range': [0, goal_cal]},
-            'bar': {'color': "#FF4B4B"},
-            'bgcolor': "lightgray",
-            'steps': [
-                {'range': [0, goal_cal*0.5], 'color': "lightgreen"},
-                {'range': [goal_cal*0.5, goal_cal*0.75], 'color': "yellow"},
-                {'range': [goal_cal*0.75, goal_cal], 'color': "red"}
-            ],
-        }
+        gauge={'axis': {'range': [0, goal_cal]},
+               'bar': {'color': "#FF4B4B"},
+               'steps': [{'range':[0, goal_cal*0.5], 'color':'lightgreen'},
+                         {'range':[goal_cal*0.5, goal_cal*0.75], 'color':'yellow'},
+                         {'range':[goal_cal*0.75, goal_cal], 'color':'red'}]}
     ))
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig_cal, use_container_width=True)
+
+    # Macro Rings
+    fig_macro = go.Figure()
+    fig_macro.add_trace(go.Pie(values=[total_protein, goal_protein-total_protein],
+                               labels=["Protein", "Remaining"], hole=0.6, name="Protein",
+                               marker_colors=["#FF6361", "#E5E5E5"]))
+    fig_macro.add_trace(go.Pie(values=[total_carbs, goal_carbs-total_carbs],
+                               labels=["Carbs", "Remaining"], hole=0.6, name="Carbs",
+                               marker_colors=["#FFA600", "#E5E5E5"]))
+    fig_macro.add_trace(go.Pie(values=[total_fat, goal_fat-total_fat],
+                               labels=["Fat", "Remaining"], hole=0.6, name="Fat",
+                               marker_colors=["#58508D", "#E5E5E5"]))
+    fig_macro.update_layout(title_text="Macro Progress", grid={'rows':1,'columns':3})
+    st.plotly_chart(fig_macro, use_container_width=True)
 
 # =============================
 # NUTRITION TAB
@@ -240,11 +238,33 @@ with tabs[2]:
 # =============================
 with tabs[3]:
     st.subheader("History")
+    df = pd.DataFrame(st.session_state.activity_log)
     if not df.empty:
-        st.dataframe(df)
+        for idx, row in df.iterrows():
+            st.markdown(f"**{row['Time']} | {row['Type']}**")
+            st.markdown(f"{row['Details']} - {row['Calories']:.1f} kcal")
+            st.markdown("---")
         if st.button("Clear Logs"):
             st.session_state.activity_log = []
             save_data()
             st.experimental_rerun()
     else:
         st.info("No logs yet.")
+
+# =============================
+# WEIGHT TRACKER TAB
+# =============================
+with tabs[4]:
+    st.subheader("Weight Tracker")
+    new_weight = st.number_input("Enter Weight (kg)", value=weight_now)
+    if st.button("Log Weight"):
+        st.session_state.weight_log.append({
+            "Time": datetime.now().strftime("%Y-%m-%d"),
+            "Weight": new_weight
+        })
+        save_data()
+        st.success("Weight logged!")
+
+    if st.session_state.weight_log:
+        df_w = pd.DataFrame(st.session_state.weight_log)
+        st.line_chart(df_w.set_index("Time")["Weight"])
