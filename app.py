@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-import os
 import plotly.graph_objects as go
+import os
 
 # =============================
 # PAGE SETUP
@@ -11,51 +11,48 @@ st.set_page_config(page_title="Optima Elite", layout="centered")
 st.title("⚡ Optima Elite Fitness Tracker")
 
 # =============================
-# LOAD OR CREATE DATA
+# INITIALIZE MEMORY
 # =============================
 if "activity_log" not in st.session_state:
-    if os.path.exists("data.csv"):
-        st.session_state.activity_log = pd.read_csv("data.csv").to_dict("records")
-    else:
-        st.session_state.activity_log = []
+    st.session_state.activity_log = []
 
 if "weight_log" not in st.session_state:
-    if os.path.exists("weight.csv"):
-        st.session_state.weight_log = pd.read_csv("weight.csv").to_dict("records")
-    else:
-        st.session_state.weight_log = []
+    st.session_state.weight_log = []
 
 def save_data():
     pd.DataFrame(st.session_state.activity_log).to_csv("data.csv", index=False)
     pd.DataFrame(st.session_state.weight_log).to_csv("weight.csv", index=False)
 
 # =============================
-# FOOD DATABASE (Nepali foods with macros)
+# FOOD DATABASE (per 100g or unit)
 # =============================
 FOOD_DB = {
-    "Rohu Fish (100g)": [97, 17, 4, 1],
-    "Mutton (Goat) (100g)": [143, 27, 0, 6],
-    "Paneer (100g)": [265, 18, 3, 21],
-    "Ghee (1 tbsp ~14g)": [900, 0, 0, 100],
-    "Tofu (100g)": [76, 8, 5, 5],
-    "Boiled Egg (1 large)": [70, 6, 0.5, 5],
-    "Spinach (100g cooked)": [23, 3, 3, 0],
-    "Broccoli (100g)": [55, 4, 7, 1],
-    "Carrot (100g)": [41, 1, 11, 0],
-    "Radish (100g)": [33, 1, 8, 0],
-    "Cucumber (100g)": [16, 1, 4, 0],
-    "Black Chana (boiled 100g)": [164, 9, 27, 3],
-    "White Chana (boiled 100g)": [164, 9, 27, 3],
-    "Bhatmas / Soybeans (100g dry)": [446, 36, 30, 20],
-    "Rice (cooked 100g)": [130, 3, 28, 0],
-    "Masoor Dal (100g cooked)": [116, 9, 20, 0],
-    "Rajma (100g cooked)": [127, 9, 22, 1],
-    "Milk (cow) (100g)": [67, 3, 4, 4],
-    "Yogurt (plain 100g)": [59, 10, 4, 0]
+    "Rohu Fish": [97, 17, 4, 1],
+    "Mutton (Goat)": [143, 27, 0, 6],
+    "Paneer": [265, 18, 3, 21],
+    "Ghee": [900, 0, 0, 100],
+    "Tofu": [76, 8, 5, 5],
+    "Boiled Egg (1 egg ~50g)": [70, 6, 0.5, 5],
+    "Spinach (cooked)": [23, 3, 3, 0],
+    "Broccoli": [55, 4, 7, 1],
+    "Carrot": [41, 1, 11, 0],
+    "Radish": [33, 1, 8, 0],
+    "Cucumber": [16, 1, 4, 0],
+    "Black Chana (boiled)": [164, 9, 27, 3],
+    "White Chana (boiled)": [164, 9, 27, 3],
+    "Bhatmas / Soybeans (dry)": [446, 36, 30, 20],
+    "Rice (cooked)": [130, 3, 28, 0],
+    "Masoor Dal (cooked)": [116, 9, 20, 0],
+    "Rajma (cooked)": [127, 9, 22, 1],
+    "Milk (cow)": [67, 3, 4, 4],
+    "Yogurt (plain)": [59, 10, 4, 0],
+    "Chicken Breast": [165, 31, 0, 3.6],
+    "Chicken Leg": [180, 28, 0, 7],
+    "Chicken Thigh": [209, 26, 0, 10]
 }
 
 # =============================
-# EXERCISE DATABASE (Categorized)
+# EXERCISE DATABASE
 # =============================
 EXERCISE_DB = {
     "Chest": [
@@ -134,7 +131,6 @@ height = st.sidebar.number_input("Height (cm)", value=170)
 weight_now = st.sidebar.number_input("Current Weight (kg)", value=70)
 body_fat = st.sidebar.number_input("Body Fat % (optional)", value=20)
 
-# BMR calculation
 if gender == "Male":
     bmr = 10*weight_now + 6.25*height - 5*age + 5
 else:
@@ -179,20 +175,20 @@ with tabs[0]:
 with tabs[1]:
     st.subheader("Log Food / Macros")
     food = st.selectbox("Select Food", list(FOOD_DB.keys()))
-    qty = st.number_input("Quantity (unit / 100g)", value=1)
+    qty = st.number_input("Quantity (grams or unit for eggs)", value=100, min_value=1)
 
-    cal = FOOD_DB[food][0]*qty
-    protein = FOOD_DB[food][1]*qty
-    carbs = FOOD_DB[food][2]*qty
-    fat = FOOD_DB[food][3]*qty
+    cal = FOOD_DB[food][0]*(qty/100)
+    protein = FOOD_DB[food][1]*(qty/100)
+    carbs = FOOD_DB[food][2]*(qty/100)
+    fat = FOOD_DB[food][3]*(qty/100)
 
-    st.markdown(f"**Calories:** {cal} kcal | **Protein:** {protein}g | **Carbs:** {carbs}g | **Fat:** {fat}g")
+    st.markdown(f"**Calories:** {cal:.1f} kcal | **Protein:** {protein:.1f} g | **Carbs:** {carbs:.1f} g | **Fat:** {fat:.1f} g")
 
     if st.button("Add Food Log"):
         st.session_state.activity_log.append({
             "Time": datetime.now().strftime("%H:%M"),
             "Type": "Food",
-            "Details": f"{qty} x {food}",
+            "Details": f"{qty}g {food}",
             "Calories": cal,
             "Protein": protein,
             "Carbs": carbs,
